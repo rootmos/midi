@@ -1,0 +1,14 @@
+[Unit]
+Description=%%EXECUTABLE%%
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=4
+ExecStart=%%EXECUTABLE%%
+ExecStartPost=/bin/sleep 2
+ExecStartPost=/usr/bin/aconnect %%INPUT%% %%SERVICE%%:0
+ExecStartPost=/usr/bin/aconnect %%SERVICE%%:1 %%OUTPUT%% 
+
+[Install]
+WantedBy=default.target
