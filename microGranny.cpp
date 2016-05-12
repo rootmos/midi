@@ -15,10 +15,6 @@
 #include <midi.hpp>
 #include <iostream>
 
-inline bool allowedMicroGrannyNote(const midi::Command::Type::NoteOn note) {
-    return (note->key >= 1 && note->key <= 6);
-}
-
 int main(int argc, const char* argv[])
 {
     if(argc != 2)
@@ -28,7 +24,7 @@ int main(int argc, const char* argv[])
     }
 
     midi::Channel mgChannel = std::stoi(argv[1]);
-    std::cout << "microGranny-ing MIDI-channel " << unlegatoChannel << std::endl;
+    std::cout << "microGranny-ing MIDI-channel " << mgChannel << std::endl;
 
     midi::Interface interface("microGranny");
 
@@ -40,7 +36,7 @@ int main(int argc, const char* argv[])
         if(command->getType() == midi::Command::Type::NoteOn)
         {
             auto noteOnCommand = std::dynamic_pointer_cast<midi::NoteOn>(command);
-            if(noteOnCommand->getChannel() == mgChannel && allowedMicroGrannyNote(noteOnCommand))
+            if(noteOnCommand->getChannel() == mgChannel && noteOnCommand->getKey() >= 1 && noteOnCommand->getKey() <= 6)
             {
                 for (auto key : activeNotes)
                     interface.sendCommand(midi::Command::ptr(new midi::NoteOff(noteOnCommand->getChannel(), key)));
