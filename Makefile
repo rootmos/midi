@@ -29,7 +29,7 @@ MICROGRANNY_OUTPUT=$(shell $(GET_CONFIG) microGranny output)
 MICROGRANNY_SERVICE=microGranny.service
 MICROGRANNY_SERVICE_FILE=$(SERVICES)/$(MICROGRANNY_SERVICE)
 
-install: unlegato microGranny
+install: unlegato chordify microGranny
 
 dependencies:
 	sudo apt install cmake libasound2-dev crudini
