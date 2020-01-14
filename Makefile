@@ -1,5 +1,3 @@
-# vim: set ft=make:
-
 SERVICES=/etc/systemd/system
 SERVICES_TEMPLATE=template.service
 
@@ -77,3 +75,6 @@ $(CHORDIFY_BIN) $(UNLEGATO_BIN): | $(BUILD) dependencies
 
 $(BUILD):
 	mkdir -p $@
+
+aclient: aclient.c
+	$(CC) -o $@ $(CFLAGS) -static aclient.c -lusb-1.0 -lasound
