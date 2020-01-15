@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -o nounset -o pipefail -o errexit
+
+UUID=6137-6233
+SUDO=
+ACTION=list
+while getopts "pluS-" OPT; do
+    case $OPT in
+        S) SUDO=sudo ;;
+        l) ACTION=list ;;
+        p) ACTION=play ;;
+        u) ACTION=upload ;;
+        -) break ;;
+        ?) exit 2 ;;
+    esac
+done
+shift $((OPTIND-1))
+
+TMP=$(mktemp -d)
+MNT=$TMP/mnt
+cleanup() {
+    if test -d "$MNT" && findmnt --noheadings "$MNT" &> /dev/null; then
+        sync
+        $SUDO umount "$MNT"
+    fi
+    rm -rf "$TMP"
+}
+trap 'cleanup' EXIT
+
+do_mount() {
+    mkdir -p "$MNT"
+    $SUDO mount "/dev/disk/by-uuid/$UUID" "$MNT"
+}
+
+if [ "$ACTION" = "list" ]; then
+    do_mount
+    ls -l "$MNT"
+elif [ "$ACTION" = "play" ]; then
+    do_mount
+    dialog --separate-output --checklist "Playlist" 25 80 5 \
+        $(find "$MNT" -iname "*.wav" -exec basename "{}" \; | sed 's,^\(.*\)$,'"$MNT"'/\1 \1 off,') \
+        2>"$TMP/playlist"
+    cat "$TMP/playlist"
+    $PLAYER --playlist="$TMP/playlist"
+elif [ "$ACTION" = "upload" ]; then
+    do_mount
+    for i in "$@"; do
+        PRE=$TMP/$(basename "$i").pre.flac
+        POST=$TMP/$(basename "$i").post.wav
+        ffmpeg -i "$i" "$PRE"
+        sox "$PRE" -b 16 "$POST"  channels 1 rate 22050 norm
+        $PLAYER "$POST"
+        read -rp "Yay or nay? " POST_CHOICE
+        case "$POST_CHOICE" in
+            y|Y)
+                ls "$MNT"
+                read -rp "Name? " BASENAME
+                $SUDO cp -v "$POST" "$MNT/$BASENAME.wav"
+                ;;
+        esac
+    done
+else
+    echo "unsupported action: $ACTION" 2>&1
+    exit 1
+fi
