@@ -53,6 +53,7 @@ public:
         Command(Type::NoteOn), channel(channel), key(key), velocity(velocity) { }
 
     Channel getChannel() { return channel; }
+    ptr withChannel(Channel c) { return ptr(new NoteOn(c, key, velocity)); }
     Key getKey() { return key; }
     Velocity getVelocity() { return velocity; }
 
@@ -70,6 +71,7 @@ public:
         Command(Type::NoteOff), channel(channel), key(key), velocity(velocity) { }
 
     Channel getChannel() { return channel; }
+    ptr withChannel(Channel c) { return ptr(new NoteOff(c, key, velocity)); }
     Key getKey() { return key; }
     Velocity getVelocity() { return velocity; }
 

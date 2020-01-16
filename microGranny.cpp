@@ -21,14 +21,15 @@ inline bool allowedMicroGrannyNote(const midi::Command::Type::NoteOn note) {
 
 int main(int argc, const char* argv[])
 {
-    if(argc != 2)
+    if(argc != 3)
     {
-        std::cerr << "Usage: " << argv[0] << " CHANNEL" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " SOUNDS NOTES" << std::endl;
         return 2;
     }
 
-    midi::Channel mgChannel = std::stoi(argv[1]);
-    std::cout << "microGranny-ing MIDI-channel " << unlegatoChannel << std::endl;
+    midi::Channel soundsChannel = std::stoi(argv[1]);
+    midi::Channel notesChannel = std::stoi(argv[2]);
+    std::cout << "microGranny-ing MIDI-channels: sounds=" << soundsChannel << " notes=" << notesChannel << std::endl;
 
     midi::Interface interface("microGranny");
 
@@ -40,13 +41,26 @@ int main(int argc, const char* argv[])
         if(command->getType() == midi::Command::Type::NoteOn)
         {
             auto noteOnCommand = std::dynamic_pointer_cast<midi::NoteOn>(command);
-            if(noteOnCommand->getChannel() == mgChannel && allowedMicroGrannyNote(noteOnCommand))
+            if(noteOnCommand->getChannel() == soundsChannel && allowedMicroGrannyNote(noteOnCommand))
             {
                 for (auto key : activeNotes)
                     interface.sendCommand(midi::Command::ptr(new midi::NoteOff(noteOnCommand->getChannel(), key)));
                 activeNotes.clear();
                 activeNotes.insert(noteOnCommand->getKey());
                 interface.sendCommand(command);
+            } else {
+                if(noteOnCommand->getChannel() == notesChannel)
+                {
+                    interface.sendCommand(noteOnCommand->withChannel(soundsChannel));
+                }
+            }
+        }
+        else if(command->getType() == midi::Command::Type::NoteOff)
+        {
+            auto noteOffCommand = std::dynamic_pointer_cast<midi::NoteOff>(command);
+            if(noteOffCommand->getChannel() == notesChannel)
+            {
+                interface.sendCommand(noteOffCommand->withChannel(soundsChannel));
             }
         }
         else if(command->getType() == midi::Command::Type::TimingClock)
