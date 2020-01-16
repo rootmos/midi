@@ -1,0 +1,9 @@
+[Unit]
+Description=Forward MIDI to Acid8
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'aconnect $(aclient -o -u 1.2) $(aclient -i -u 1.2)'
+
+[Install]
+WantedBy=default.target

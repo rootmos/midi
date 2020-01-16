@@ -1,0 +1,14 @@
+[Unit]
+Description=Forward MIDI to the microGranny
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=4
+ExecStart=/usr/local/bin/microGranny 10 5
+ExecStartPost=/bin/sleep 2
+ExecStartPost=/bin/sh -c 'aconnect $(aclient -o -u 1.2) microGranny:0'
+ExecStartPost=/bin/sh -c 'aconnect microGranny:1 $(aclient -i -u 1.3)'
+
+[Install]
+WantedBy=default.target
