@@ -17,7 +17,7 @@ typedef unsigned char ControlValue;
 class Command
 {
 public:
-    enum Type { NoteOn, NoteOff, CC, TimingClock };
+    enum Type { NoteOn, NoteOff, CC, RealTime };
 
     Command(Type type): type(type) { }
     virtual ~Command() {};
@@ -66,12 +66,19 @@ public:
     std::string to_string();
 };
 
-class TimingClock: public Command
+class RealTime: public Command
 {
 public:
-    TimingClock(): Command(Type::TimingClock) { }
+    enum Message { Clock, Start, Stop, Continue, Reset };
+
+    RealTime(Message msg): Command(Type::RealTime), msg(msg) { }
+
+    Message getMessage() { return msg; }
 
     std::string to_string();
+
+private:
+    Message msg;
 };
 
 class CC: public Command

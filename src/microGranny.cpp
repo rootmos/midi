@@ -12,15 +12,20 @@ inline bool allowedMicroGrannyNote(const std::shared_ptr<midi::NoteOff>& note) {
 
 int main(int argc, const char* argv[])
 {
-    if(argc != 3)
+    if(argc != 4)
     {
-        std::cerr << "Usage: " << argv[0] << " SOUNDS NOTES" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " SOUNDS NOTES OUT" << std::endl;
         return 2;
     }
 
     midi::Channel soundsChannel = std::stoi(argv[1]);
     midi::Channel notesChannel = std::stoi(argv[2]);
-    std::cout << "microGranny-ing MIDI-channels: sounds=" << soundsChannel << " notes=" << notesChannel << std::endl;
+    midi::Channel outChannel = std::stoi(argv[3]);
+    std::cout << "microGranny-ing MIDI-channels:"
+        << " sounds=" << soundsChannel
+        << " notes=" << notesChannel
+        << " out=" << outChannel
+        << std::endl;
 
     midi::Interface interface("microGranny");
 
@@ -38,10 +43,10 @@ int main(int argc, const char* argv[])
                     interface.sendCommand(midi::Command::ptr(new midi::NoteOff(noteOnCommand->getChannel(), key)));
                 activeNotes.clear();
                 activeNotes.insert(noteOnCommand->getKey());
-                interface.sendCommand(command);
+                interface.sendCommand(noteOnCommand->withChannel(outChannel));
             } else if(noteOnCommand->getChannel() == notesChannel)
             {
-                interface.sendCommand(noteOnCommand->withChannel(soundsChannel));
+                interface.sendCommand(noteOnCommand->withChannel(outChannel));
             }
         }
         else if(command->getType() == midi::Command::Type::NoteOff)
@@ -49,10 +54,10 @@ int main(int argc, const char* argv[])
             auto noteOffCommand = std::dynamic_pointer_cast<midi::NoteOff>(command);
             if(noteOffCommand->getChannel() == notesChannel)
             {
-                interface.sendCommand(noteOffCommand->withChannel(soundsChannel));
+                interface.sendCommand(noteOffCommand->withChannel(outChannel));
             }
         }
-        else if(command->getType() == midi::Command::Type::TimingClock)
+        else if(command->getType() == midi::Command::Type::RealTime)
         {
             interface.sendCommand(command);
         }
@@ -60,7 +65,7 @@ int main(int argc, const char* argv[])
         {
             auto ccCommand = std::dynamic_pointer_cast<midi::CC>(command);
             if(ccCommand->getChannel() == notesChannel) {
-                interface.sendCommand(command);
+                interface.sendCommand(ccCommand->withChannel(outChannel));
             }
         }
     }

@@ -20,9 +20,16 @@ std::string NoteOff::to_string()
     return "NoteOff(chan="+  std::to_string(channel) + ", key=" + std::to_string(key) + ", velocity=" + std::to_string(velocity) + ")";
 }
 
-std::string TimingClock::to_string()
+std::string RealTime::to_string()
 {
-    return "TimingClock";
+    switch(msg) {
+    case Message::Clock: return "Clock";
+    case Message::Start: return "Start";
+    case Message::Stop: return "Stop";
+    case Message::Continue: return "Continue";
+    case Message::Reset: return "Reset";
+    default: throw std::runtime_error("unsupported realtime message: " + msg);
+    }
 }
 
 std::string CC::to_string()
@@ -187,21 +194,48 @@ Command::ptr Interface::Internals::nextCommand()
     if (err < 0)
         throw std::runtime_error("Unable to read next command" + std::string(snd_strerror(err)));
 
-
-    if(ev->type == SND_SEQ_EVENT_NOTEON)
-    {
+    switch(ev->type) {
+    case SND_SEQ_EVENT_NOTEON: {
         auto note = Command::ptr(new NoteOn(ev->data.note.channel + 1, ev->data.note.note, ev->data.note.velocity));
-        debug(("Received %s on interface %s", note->to_string().c_str(), name.c_str()))
+        debug(("Received %s on interface %s", note->to_string().c_str(), name.c_str()));
         return note;
     }
-    if(ev->type == SND_SEQ_EVENT_NOTEOFF)
-    {
+    case SND_SEQ_EVENT_NOTEOFF: {
         auto note = Command::ptr(new NoteOff(ev->data.note.channel + 1, ev->data.note.note, ev->data.note.velocity));
-        debug(("Received %s on interface %s", note->to_string().c_str(), name.c_str()))
+        debug(("Received %s on interface %s", note->to_string().c_str(), name.c_str()));
         return note;
     }
-    else
-    {
+    case SND_SEQ_EVENT_CONTROLLER: {
+        auto cc = Command::ptr(new CC(ev->data.control.channel + 1, ev->data.control.param, ev->data.control.value));
+        debug(("Received %s on interface %s", cc->to_string().c_str(), name.c_str()));
+        return cc;
+    }
+    case SND_SEQ_EVENT_CLOCK: {
+        auto rt = Command::ptr(new RealTime(RealTime::Message::Clock));
+        debug(("Received %s on interface %s", rt->to_string().c_str(), name.c_str()));
+        return rt;
+    }
+    case SND_SEQ_EVENT_START: {
+        auto rt = Command::ptr(new RealTime(RealTime::Message::Start));
+        debug(("Received %s on interface %s", rt->to_string().c_str(), name.c_str()));
+        return rt;
+    }
+    case SND_SEQ_EVENT_STOP: {
+        auto rt = Command::ptr(new RealTime(RealTime::Message::Stop));
+        debug(("Received %s on interface %s", rt->to_string().c_str(), name.c_str()));
+        return rt;
+    }
+    case SND_SEQ_EVENT_CONTINUE: {
+        auto rt = Command::ptr(new RealTime(RealTime::Message::Continue));
+        debug(("Received %s on interface %s", rt->to_string().c_str(), name.c_str()));
+        return rt;
+    }
+    case SND_SEQ_EVENT_RESET: {
+        auto rt = Command::ptr(new RealTime(RealTime::Message::Reset));
+        debug(("Received %s on interface %s", rt->to_string().c_str(), name.c_str()));
+        return rt;
+    }
+    default:
         debug(("Received event of unimplemented type: %d", ev->type));
         return nextCommand();
     }
@@ -255,6 +289,38 @@ void Interface::Internals::buildEvent(snd_seq_event_t* ev, const Command::ptr& c
         {
             auto note = std::dynamic_pointer_cast<midi::NoteOff>(command);
             snd_seq_ev_set_noteoff(ev, note->getChannel() - 1, note->getKey(), note->getVelocity());
+        }
+        break;
+    case Command::Type::CC:
+        {
+            auto cc = std::dynamic_pointer_cast<midi::CC>(command);
+            snd_seq_ev_set_controller(ev, cc->getChannel() - 1, cc->getNumber(), cc->getValue());
+        }
+        break;
+    case Command::Type::RealTime:
+        {
+            auto rt = std::dynamic_pointer_cast<midi::RealTime>(command);
+            snd_seq_ev_clear(ev);
+            snd_seq_ev_set_fixed(ev);
+            switch(rt->getMessage()) {
+            case RealTime::Message::Clock:
+                ev->type = SND_SEQ_EVENT_CLOCK;
+                break;
+            case RealTime::Message::Start:
+                ev->type = SND_SEQ_EVENT_START;
+                break;
+            case RealTime::Message::Stop:
+                ev->type = SND_SEQ_EVENT_STOP;
+                break;
+            case RealTime::Message::Continue:
+                ev->type = SND_SEQ_EVENT_CONTINUE;
+                break;
+            case RealTime::Message::Reset:
+                ev->type = SND_SEQ_EVENT_RESET;
+                break;
+            default:
+                throw std::runtime_error("unsupported realtime message: " + rt->getMessage());
+            }
         }
         break;
     default:
