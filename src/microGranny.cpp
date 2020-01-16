@@ -1,22 +1,13 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 #include <set>
-#include <midi.hpp>
+#include "midi.hpp"
 #include <iostream>
 
-inline bool allowedMicroGrannyNote(const midi::Command::Type::NoteOn note) {
-    return (note->key >= 1 && note->key <= 6);
+inline bool allowedMicroGrannyNote(const std::shared_ptr<midi::NoteOn>& note) {
+    return (note->getKey() >= 1 && note->getKey() <= 6);
+}
+
+inline bool allowedMicroGrannyNote(const std::shared_ptr<midi::NoteOff>& note) {
+    return (note->getKey() >= 1 && note->getKey() <= 6);
 }
 
 int main(int argc, const char* argv[])
@@ -48,11 +39,9 @@ int main(int argc, const char* argv[])
                 activeNotes.clear();
                 activeNotes.insert(noteOnCommand->getKey());
                 interface.sendCommand(command);
-            } else {
-                if(noteOnCommand->getChannel() == notesChannel)
-                {
-                    interface.sendCommand(noteOnCommand->withChannel(soundsChannel));
-                }
+            } else if(noteOnCommand->getChannel() == notesChannel)
+            {
+                interface.sendCommand(noteOnCommand->withChannel(soundsChannel));
             }
         }
         else if(command->getType() == midi::Command::Type::NoteOff)
@@ -67,7 +56,13 @@ int main(int argc, const char* argv[])
         {
             interface.sendCommand(command);
         }
-
+        else if(command->getType() == midi::Command::Type::CC)
+        {
+            auto ccCommand = std::dynamic_pointer_cast<midi::CC>(command);
+            if(ccCommand->getChannel() == notesChannel) {
+                interface.sendCommand(command);
+            }
+        }
     }
 
     return 0;

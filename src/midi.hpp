@@ -1,18 +1,4 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#ifndef midi_hpp
-#define midi_hpp
+#pragma once
 
 #include <memory>
 #include <cstring>
@@ -25,11 +11,13 @@ typedef unsigned char Data;
 typedef unsigned int Channel;
 typedef unsigned char Key;
 typedef unsigned char Velocity;
+typedef unsigned char ControlNumber;
+typedef unsigned char ControlValue;
 
 class Command
 {
 public:
-    enum Type { NoteOn, NoteOff, TimingClock };
+    enum Type { NoteOn, NoteOff, CC, TimingClock };
 
     Command(Type type): type(type) { }
     virtual ~Command() {};
@@ -86,6 +74,24 @@ public:
     std::string to_string();
 };
 
+class CC: public Command
+{
+    Channel channel;
+    ControlNumber number;
+    ControlValue value;
+public:
+
+    CC(Channel channel, ControlNumber number, ControlValue value):
+        Command(Type::CC), channel(channel), number(number), value(value) { }
+
+    Channel getChannel() { return channel; }
+    ptr withChannel(Channel c) { return ptr(new CC(c, number, value)); }
+    ControlValue getValue() { return value; }
+    ControlNumber getNumber() { return number; }
+
+    std::string to_string();
+};
+
 
 class Interface
 {
@@ -100,5 +106,3 @@ public:
 };
 
 }
-
-#endif

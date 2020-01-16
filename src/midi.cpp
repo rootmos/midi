@@ -1,25 +1,11 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 #include "midi.hpp"
+#include "debug.hpp"
 
 #include <alsa/asoundlib.h>
-#include "debug.hpp"
 #include <memory>
 #include <cstring>
 #include <stdexcept>
 #include <bitset>
-
 
 namespace midi {
 
@@ -37,6 +23,11 @@ std::string NoteOff::to_string()
 std::string TimingClock::to_string()
 {
     return "TimingClock";
+}
+
+std::string CC::to_string()
+{
+    return "CC(chan=" + std::to_string(channel) + ", number=" + std::to_string(number) + ", value=" + std::to_string(value) + ")";
 }
 
 
@@ -116,7 +107,7 @@ void Interface::Internals::trySettingName()
 void Interface::Internals::tryOpenPorts()
 {
     tryOpenInputPort();
-    
+
     try
     {
         tryOpenOutputPort();
