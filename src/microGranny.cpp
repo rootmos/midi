@@ -1,4 +1,3 @@
-#include <set>
 #include "midi.hpp"
 #include <iostream>
 
@@ -29,22 +28,15 @@ int main(int argc, const char* argv[])
 
     midi::Interface interface("microGranny");
 
-    std::set<midi::Key> activeNotes;
-
     while (1)
     {
         midi::Command::ptr command = interface.nextCommand();
         if(command->getType() == midi::Command::Type::NoteOn)
         {
             auto noteOnCommand = std::dynamic_pointer_cast<midi::NoteOn>(command);
-            if(noteOnCommand->getChannel() == soundsChannel && allowedMicroGrannyNote(noteOnCommand))
-            {
-                for (auto key : activeNotes)
-                    interface.sendCommand(midi::Command::ptr(new midi::NoteOff(noteOnCommand->getChannel(), key)));
-                activeNotes.clear();
-                activeNotes.insert(noteOnCommand->getKey());
-                interface.sendCommand(noteOnCommand->withChannel(outChannel));
-            } else if(noteOnCommand->getChannel() == notesChannel)
+            if(noteOnCommand->getChannel() == notesChannel
+               || (noteOnCommand->getChannel() == soundsChannel
+                   && allowedMicroGrannyNote(noteOnCommand)))
             {
                 interface.sendCommand(noteOnCommand->withChannel(outChannel));
             }
@@ -52,7 +44,9 @@ int main(int argc, const char* argv[])
         else if(command->getType() == midi::Command::Type::NoteOff)
         {
             auto noteOffCommand = std::dynamic_pointer_cast<midi::NoteOff>(command);
-            if(noteOffCommand->getChannel() == notesChannel)
+            if(noteOffCommand->getChannel() == notesChannel
+               || (noteOffCommand->getChannel() == soundsChannel
+                   && allowedMicroGrannyNote(noteOffCommand)))
             {
                 interface.sendCommand(noteOffCommand->withChannel(outChannel));
             }

@@ -236,7 +236,7 @@ Command::ptr Interface::Internals::nextCommand()
         return rt;
     }
     default:
-        debug(("Received event of unimplemented type: %d", ev->type));
+        warn(("Received event of unimplemented type: %d", ev->type));
         return nextCommand();
     }
 }

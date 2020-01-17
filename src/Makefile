@@ -1,4 +1,4 @@
-all: $(foreach exe, unlegato chordify microGranny aclient, $(BUILD)/$(exe))
+all: $(foreach exe, forward unlegato chordify microGranny aclient, $(BUILD)/$(exe))
 
 $(BUILD)/%: %.cpp midi.cpp midi.hpp
 	$(CXX) -o $@ $(CXXFLAGS) -O2 -DNO_DEBUG -static $< midi.cpp -lasound
