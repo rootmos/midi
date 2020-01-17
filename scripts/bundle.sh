@@ -18,7 +18,7 @@ shift $((OPTIND-1))
 
 PREFIX=${PREFIX-/usr/local/bin}
 
-install -D -t "$TMP/$PREFIX" "$BUILD"/*
+install -D -t "$TMP/$PREFIX" "$BUILD"/bin/*
 tar -cf- -C "$ROOT" . | tar -xf- -C "$TMP"
 
 tar -cf "$OUT" -C "$TMP" .

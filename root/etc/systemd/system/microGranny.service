@@ -5,6 +5,7 @@ Description=Forward MIDI to the microGranny
 Type=simple
 Restart=always
 RestartSec=4
+Nice=-10
 ExecStart=/usr/local/bin/microGranny 10 5 5
 ExecStartPost=/bin/sleep 2
 ExecStartPost=/bin/sh -c 'aconnect $(aclient -o -u 1.2) microGranny:0'
