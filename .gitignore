@@ -1,2 +1,4 @@
 build
 midi.tar.gz
+*.img
+.log

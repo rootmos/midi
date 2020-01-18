@@ -1,0 +1,4 @@
+telnet  23/tcp
+telnet  23/udp
+ftp     21/tcp
+ftp     21/udp

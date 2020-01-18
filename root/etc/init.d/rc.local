@@ -1,0 +1,17 @@
+#!/bin/sh
+
+PATH=/usr/local/bin:$PATH
+
+(microGranny 10 5 5 2>&1 | logger -st microGranny) &
+(forward blofeld 7 7 8 2>&1 | logger -st blofeld) &
+
+sleep 3
+
+aconnect $(aclient -o -u 1.2) $(aclient -i -u 1.2)
+
+aconnect $(aclient -o -u 1.2) blofeld:0
+aconnect blofeld:1 $(aclient -i -u 1.4)
+aconnect $(aclient -o -u 1.5) $(aclient -i -u 1.4)
+
+aconnect $(aclient -o -u 1.2) microGranny:0
+aconnect microGranny:1 $(aclient -i -u 1.3)

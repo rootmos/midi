@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mkdir -p /proc /sys /dev/pts /var/log
+mount -a
