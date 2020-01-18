@@ -12,14 +12,14 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
     switch(ev->type) {
     case SND_SEQ_EVENT_NOTEON:
         if((1 << ev->data.note.channel) & st->in_channels) {
-            info("note on %u", ev->data.note.note);
+            debug("note on %u", ev->data.note.note);
             SET_CHANNEL(ev->data.note, st->out_channel);
             send_event(ctx, ev);
         }
         break;
     case SND_SEQ_EVENT_NOTEOFF:
         if((1 << ev->data.note.channel) & st->in_channels) {
-            info("note off %u", ev->data.note.note);
+            debug("note off %u", ev->data.note.note);
             SET_CHANNEL(ev->data.note, st->out_channel);
             send_event(ctx, ev);
         }
@@ -41,7 +41,7 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
     case SND_SEQ_EVENT_PORT_SUBSCRIBED:
         break;
     default:
-        debug("ignored event of type=%d", ev->type);
+        warning("ignored event of type=%d", ev->type);
     }
 
     return 0;
@@ -49,7 +49,7 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
 
 int main(int argc, char* argv[])
 {
-    if(argc < 4) {
+    if(argc < 3) {
         dprintf(2, "usage: %s NAME OUT IN+\n", argv[0]);
         return 2;
     }

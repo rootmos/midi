@@ -2,16 +2,28 @@
 
 PATH=/usr/local/bin:$PATH
 
-(microGranny 10 5 5 2>&1 | logger -st microGranny) &
-(forward blofeld 7 7 8 2>&1 | logger -st blofeld) &
+(nice -10 microGranny 10 5 5 2>&1 | logger -st microGranny) &
+(nice -10 forward blofeld 7 7 8 2>&1 | logger -st blofeld) &
+(nice -10 forward acid8 3 2>&1 | logger -st acid8) &
 
-sleep 3
+sleep 1
 
-aconnect $(aclient -o -u 1.2) $(aclient -i -u 1.2)
+c() {
+    logger -s "$1: $2 -> $3"
+    aconnect "$2" "$3"
+}
 
-aconnect $(aclient -o -u 1.2) blofeld:0
-aconnect blofeld:1 $(aclient -i -u 1.4)
-aconnect $(aclient -o -u 1.5) $(aclient -i -u 1.4)
+ce() {
+    logger -s "$1: $2 -> $3 (exclusive)"
+    aconnect -e "$2" "$3"
+}
 
-aconnect $(aclient -o -u 1.2) microGranny:0
-aconnect microGranny:1 $(aclient -i -u 1.3)
+c "acid8 input" $(aclient -o -u 1.2) acid8:0
+ce "acid8 output" acid8:1 $(aclient -i -u 1.2)
+
+c "blofeld input" $(aclient -o -u 1.2) blofeld:0
+c "blofeld output" blofeld:1 $(aclient -i -u 1.4)
+c "keyboard" $(aclient -o -u 1.5) $(aclient -i -u 1.4)
+
+c "microGranny input" $(aclient -o -u 1.2) microGranny:0
+ce "microGranny output" microGranny:1 $(aclient -i -u 1.3)

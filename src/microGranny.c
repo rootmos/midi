@@ -15,7 +15,7 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
         if(CHANNEL(ev->data.note) == st->notes_channel
            || (CHANNEL(ev->data.note) == st->sounds_channel
                && ev->data.note.note <= 6)) {
-            info("note on %u", ev->data.note.note);
+            debug("note on %u", ev->data.note.note);
             SET_CHANNEL(ev->data.note, st->out_channel);
             send_event(ctx, ev);
         }
@@ -24,16 +24,16 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
         if(CHANNEL(ev->data.note) == st->notes_channel
            || (CHANNEL(ev->data.note) == st->sounds_channel
                && ev->data.note.note <= 6)) {
-            info("note off %u", ev->data.note.note);
+            debug("note off %u", ev->data.note.note);
             SET_CHANNEL(ev->data.note, st->out_channel);
             send_event(ctx, ev);
         }
         break;
     case SND_SEQ_EVENT_CONTROLLER:
         if(CHANNEL(ev->data.control) == st->notes_channel) {
-            info("cc %u %u", ev->data.control.param, ev->data.control.value);
             SET_CHANNEL(ev->data.control, st->out_channel);
             send_event(ctx, ev);
+            info("cc %u %u", ev->data.control.param, ev->data.control.value);
         }
         break;
     case SND_SEQ_EVENT_CLOCK:

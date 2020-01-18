@@ -2,6 +2,7 @@
 #include <r.h>
 #include <poll.h>
 #include <math.h>
+#include <unistd.h>
 
 struct ctx {
     snd_seq_t* seq;
@@ -16,6 +17,9 @@ struct ctx {
     size_t clocks;
     uint64_t pulse_ns[256];
     size_t pulses;
+
+    snd_seq_event_t queue[8];
+    size_t queue_n, queue_m;
 };
 
 static void init(struct ctx* ctx,
@@ -58,6 +62,7 @@ static void deinit(struct ctx* ctx)
     ctx->seq = NULL;
 
     info("processed %zu incoming events", ctx->in_count);
+    info("processed %zu outgoing events", ctx->queue_n);
 }
 
 static void observe_event(struct ctx* ctx, snd_seq_event_t* ev)
@@ -71,22 +76,29 @@ static void observe_event(struct ctx* ctx, snd_seq_event_t* ev)
                 + (t.tv_nsec - ctx->t.tv_nsec);
 
             if(ctx->pulses == LENGTH(ctx->pulse_ns)) {
-                uint64_t sum = 0;
-                for(size_t i = 0; i < ctx->pulses; i++) {
-                    sum += ctx->pulse_ns[i];
+                if(fork() == 0) {
+                    int res = nice(15);
+                    CHECK(res, "nice(15)");
+
+                    uint64_t sum = 0;
+                    for(size_t i = 0; i < ctx->pulses; i++) {
+                        sum += ctx->pulse_ns[i];
+                    }
+
+                    double avg_pulse = (double)sum/ctx->pulses;
+
+                    double stddev = 0;
+                    for(size_t i = 0; i < ctx->pulses; i++) {
+                        double x = avg_pulse - ctx->pulse_ns[i];
+                        stddev += x*x;
+                    }
+                    stddev = sqrt(stddev/(ctx->pulses - 1));
+
+                    double tempo = (double)2500000000/avg_pulse;
+                    info("%.2fBPM (stddev=%.2fms)", tempo, stddev/1000000);
+
+                    exit(0);
                 }
-
-                double avg_pulse = (double)sum/ctx->pulses;
-
-                double stddev = 0;
-                for(size_t i = 0; i < ctx->pulses; i++) {
-                    double x = avg_pulse - ctx->pulse_ns[i];
-                    stddev += x*x;
-                }
-                stddev = sqrt(stddev/(ctx->pulses - 1));
-
-                double tempo = (double)2500000000/avg_pulse;
-                info("%.2fBPM (stddev=%.2fms)", tempo, stddev/1000000);
 
                 ctx->pulses = 0;
             }
@@ -103,8 +115,7 @@ static int loop(struct ctx* ctx, event_callback_t cb, void* opaque)
     while(1) {
         short events = POLLIN;
 
-        int o = snd_seq_event_output_pending(ctx->seq);
-        if(o > 0) {
+        if(ctx->queue_n < ctx->queue_m) {
             events |= POLLOUT;
         }
 
@@ -144,11 +155,15 @@ static int loop(struct ctx* ctx, event_callback_t cb, void* opaque)
             }
 
             if(revents & POLLOUT) {
+                while(ctx->queue_n < ctx->queue_m) {
+                    int res = snd_seq_event_output_buffer(
+                        ctx->seq,
+                        &ctx->queue[(ctx->queue_n++) % LENGTH(ctx->queue)]);
+                    CHECK_ALSA(res, "snd_seq_event_output");
+                }
+
                 res = snd_seq_drain_output(ctx->seq);
                 CHECK_ALSA(res, "snd_seq_drain_output");
-
-                res = snd_seq_sync_output_queue(ctx->seq);
-                CHECK_ALSA(res, "snd_seq_sync_output_queue");
 
                 revents &= ~POLLOUT;
             }
@@ -162,12 +177,19 @@ static int loop(struct ctx* ctx, event_callback_t cb, void* opaque)
 
 void send_event(struct ctx* ctx, snd_seq_event_t* ev)
 {
-    snd_seq_ev_set_source(ev, ctx->output);
     snd_seq_ev_set_subs(ev);
     snd_seq_ev_set_direct(ev);
+    snd_seq_ev_set_source(ev, ctx->output);
 
-    int res = snd_seq_event_output(ctx->seq, ev);
-    CHECK_ALSA(res, "snd_seq_event_output");
+    memcpy(&ctx->queue[(ctx->queue_m++) % LENGTH(ctx->queue)], ev, sizeof(*ev));
+
+    size_t l = ctx->queue_m - ctx->queue_n;
+    if(l >= LENGTH(ctx->queue)) {
+        warning("buffer overflow: %zu queued events in queue with size %zu",
+                l, LENGTH(ctx->queue));
+    } else if(l >= LENGTH(ctx->queue)/2) {
+        info("many (%zu/%zu) queued events", l, LENGTH(ctx->queue));
+    }
 }
 
 #define CHANNEL(ev) ((ev).channel + 1)
