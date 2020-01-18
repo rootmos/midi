@@ -1,3 +1,6 @@
 [submodule "libr"]
 	path = libr
 	url = git@github.com:rootmos/libr.git
+[submodule "spl"]
+	path = spl
+	url = https://github.com/rootmos/spl
