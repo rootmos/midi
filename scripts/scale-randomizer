@@ -1,0 +1,149 @@
+#!/usr/bin/tcc -run
+
+#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+typedef unsigned int semitone;
+
+struct mode {
+    const char* name;
+    semitone offset[7];
+};
+
+// https://en.wikipedia.org/wiki/Musical_mode#Analysis
+struct mode modes[] = {
+    { .name = "Ionian (I)", .offset = { 0, 2, 4, 5, 7, 9, 11 } },
+    { .name = "Dorian (II)", .offset = { 0, 2, 3, 5, 7, 9, 10 } },
+    { .name = "Phrygian (III)", .offset = { 0, 1, 3, 5, 7, 8, 10 } },
+    { .name = "Lydian (IV)", .offset = { 0, 2, 4, 6, 7, 9, 11 } },
+    { .name = "Mixolydian (V)", .offset = { 0, 2, 4, 5, 7, 9, 10 } },
+    { .name = "Aeolian (VI)", .offset = { 0, 2, 3, 5, 7, 8, 10 } },
+    { .name = "Locrian (VII)", .offset = { 0, 1, 3, 5, 6, 8, 10 } },
+};
+
+static const char* note_name(semitone t, int sharp)
+{
+    if(sharp) {
+        switch(t % 12) {
+        case 0: return "C";
+        case 1: return "C#";
+        case 2: return "D";
+        case 3: return "D#";
+        case 4: return "E";
+        case 5: return "F";
+        case 6: return "F#";
+        case 7: return "G";
+        case 8: return "G#";
+        case 9: return "A";
+        case 10: return "A#";
+        case 11: return "B";
+        }
+    } else {
+        switch(t % 12) {
+        case 0: return "C";
+        case 1: return "Db";
+        case 2: return "D";
+        case 3: return "Eb";
+        case 4: return "E";
+        case 5: return "F";
+        case 6: return "Gb";
+        case 7: return "G";
+        case 8: return "Ab";
+        case 9: return "A";
+        case 10: return "Bb";
+        case 11: return "B";
+        }
+    }
+}
+
+static void run_graphical(unsigned int interval, const char* this,
+                          const char* font)
+{
+    char text[1024];
+    sprintf(text, "${exec %s -c}", this);
+
+    char ints[1024];
+    sprintf(ints, "--interval=%u", interval);
+
+    if(font) {
+        execlp("conky", "conky", ints,
+               "-x", "0", "-y", "0",
+               "--text", text,
+               "--font", font,
+               "--alignment=bottom_right",
+               NULL);
+    } else {
+        execlp("conky", "conky", ints,
+               "-x", "0", "-y", "0",
+               "--text", text,
+               "--alignment=bottom_right",
+               NULL);
+    }
+}
+
+static void run_console(void)
+{
+    semitone base = rand() % 12;
+    int flavor = rand() % 2;
+    size_t m = rand() % 7;
+
+    printf("%s: ", modes[m].name);
+
+    for(size_t i = 0; i < 7; i++) {
+        if(i == 6) {
+            printf("%s", note_name(base + modes[m].offset[i], flavor));
+        } else {
+            printf("%s ", note_name(base + modes[m].offset[i], flavor));
+        }
+    }
+    printf("\n");
+}
+
+static void print_usage(int fd, const char* prog)
+{
+    dprintf(fd, "usage: %s [OPTION]...\n", prog);
+    dprintf(fd, "\n");
+    dprintf(fd, "options:\n");
+    dprintf(fd, "  -g         output to X11 (using conky) (default)\n");
+    dprintf(fd, "  -c         output to stdout\n");
+    dprintf(fd, "  -f FONT    set the font\n");
+    dprintf(fd, "  -h         print this message\n");
+}
+
+int main(int argc, char* argv[])
+{
+    srand(time(NULL));
+
+    int graphical = 1;
+    unsigned int interval = 180;
+    const char* font = NULL;
+
+    int res;
+    while((res = getopt(argc, argv, "hgci:f:")) != -1) {
+        switch(res) {
+        case 'g': graphical = 1; break;
+        case 'c': graphical = 0; break;
+        case 'f': font = strdup(optarg); break;
+        case 'i':
+            if(sscanf(optarg, "%u", &interval) != 1) {
+                exit(1);
+            }
+            break;
+        case 'h':
+        default:
+            print_usage(res == 'h' ? 1 : 2, argv[0]);
+            exit(res == 'h' ? 0 : 1);
+        }
+    }
+
+    if(graphical) {
+        run_graphical(120, argv[0], font);
+    } else {
+        run_console();
+    }
+
+    return 0;
+}
