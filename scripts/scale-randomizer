@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#define LENGTH(xs) (sizeof(xs)/sizeof((xs)[0]))
 typedef unsigned int semitone;
 
 struct mode {
@@ -22,6 +23,76 @@ struct mode modes[] = {
     { .name = "Mixolydian (V)", .offset = { 0, 2, 4, 5, 7, 9, 10 } },
     { .name = "Aeolian (VI)", .offset = { 0, 2, 3, 5, 7, 8, 10 } },
     { .name = "Locrian (VII)", .offset = { 0, 1, 3, 5, 6, 8, 10 } },
+};
+
+#define PROGRESSION_MAX 10
+
+struct chord {
+    const char* name;
+    const char* suffix;
+    size_t index;
+};
+
+struct progression {
+    const char* name;
+    struct mode* mode;
+    struct chord chords[PROGRESSION_MAX];
+    size_t length;
+};
+
+struct progression progressions[] = {
+    {
+        .name = NULL,
+        .mode = &modes[0],
+        .chords = {
+            { .name = "ii", .suffix = "m", .index = 1 },
+            { .name = "V", .suffix = "7", .index = 4 },
+            { .name = "I", .suffix = "", .index = 0 },
+        },
+        .length = 3,
+    },{
+        // https://en.wikipedia.org/wiki/%2750s_progression
+        .name = "50s",
+        .mode = &modes[0],
+        .chords = {
+            { .name = "vi", .suffix = "m", .index = 5 },
+            { .name = "IV", .suffix = "", .index = 3 },
+            { .name = "V", .suffix = "7", .index = 4 },
+            { .name = "I", .suffix = "", .index = 0 },
+        },
+        .length = 4,
+    },{
+        // https://en.wikipedia.org/wiki/I%E2%80%93V%E2%80%93vi%E2%80%93IV_progression#Variations
+        .name = NULL,
+        .mode = &modes[0],
+        .chords = {
+            { .name = "vi", .suffix = "m", .index = 5 },
+            { .name = "IV", .suffix = "", .index = 3 },
+            { .name = "I", .suffix = "", .index = 0 },
+            { .name = "V", .suffix = "7", .index = 4 },
+        },
+        .length = 4,
+    },{
+        .name = "Andalusian",
+        .mode = &modes[2],
+        .chords = {
+            { .name = "vi", .suffix = "m", .index = 5 },
+            { .name = "V", .suffix = "", .index = 4 },
+            { .name = "IV", .suffix = "", .index = 3 },
+            { .name = "III", .suffix = "", .index = 2 },
+        },
+        .length = 4,
+    },{
+        .name = NULL,
+        .mode = &modes[0],
+        .chords = {
+            { .name = "vi", .suffix = "m", .index = 5 },
+            { .name = "ii", .suffix = "m", .index = 1 },
+            { .name = "V", .suffix = "7", .index = 4 },
+            { .name = "I", .suffix = "", .index = 0 },
+        },
+        .length = 4,
+    },
 };
 
 static const char* note_name(semitone t, int sharp)
@@ -63,13 +134,24 @@ struct options {
     int interval;
     int random_starting_finger;
     const char* font;
+    enum {
+        SCALE_MODE = 0,
+        PROGRESSION_MODE,
+    } mode;
 };
 
 static void run_graphical(const char* this, struct options* o)
 {
     char text[1024];
-    sprintf(text, "${exec %s -c %s}", this,
-            o->random_starting_finger ? "-F " : "");
+    const char* m;
+    switch(o->mode) {
+    case SCALE_MODE: m = "-s"; break;
+    case PROGRESSION_MODE: m = "-p"; break;
+    }
+    sprintf(text, "${exec %s -c -i %d %s%s}", this,
+            o->interval,
+            o->random_starting_finger ? "-F " : "",
+            m);
 
     char ints[1024];
     sprintf(ints, "--interval=%u", o->interval);
@@ -94,19 +176,51 @@ static void run_console(struct options* o)
 {
     semitone base = rand() % 12;
     int flavor = rand() % 2;
-    size_t m = rand() % 7;
+    if(o->mode == SCALE_MODE) {
+        struct mode* m = &modes[rand() % LENGTH(modes)];
+        printf("%s: ", m->name);
 
-    printf("%s: ", modes[m].name);
+        if(o->random_starting_finger) {
+            printf("(%d) ", rand() % 5 + 1);
+        }
 
-    if(o->random_starting_finger) {
-        printf("(%d) ", rand() % 5 + 1);
-    }
+        for(size_t i = 0; i < LENGTH(m->offset); i++) {
+            const char* n = note_name(base + m->offset[i], flavor);
+            if(i == 6) {
+                printf("%s", n);
+            } else {
+                printf("%s ", n);
+            }
+        }
+    } else if(o->mode == PROGRESSION_MODE) {
+        struct progression* p = &progressions[rand() % LENGTH(progressions)];
 
-    for(size_t i = 0; i < 7; i++) {
-        if(i == 6) {
-            printf("%s", note_name(base + modes[m].offset[i], flavor));
+        if(p->name) {
+            printf("%s (", p->name);
+        }
+
+        for(size_t i = 0; i < p->length; i++) {
+            if(i + 1 == p->length) {
+                printf("%s", p->chords[i].name);
+            } else {
+                printf("%s-", p->chords[i].name);
+            }
+        }
+
+        if(p->name) {
+            printf("): ");
         } else {
-            printf("%s ", note_name(base + modes[m].offset[i], flavor));
+            printf(": ");
+        }
+
+        for(size_t i = 0; i < p->length; i++) {
+            const char* n = note_name(
+                base + p->mode->offset[p->chords[i].index], flavor);
+            if(i + 1 == p->length) {
+                printf("%s%s", n, p->chords[i].suffix);
+            } else {
+                printf("%s%s-", n, p->chords[i].suffix);
+            }
         }
     }
     printf("\n");
@@ -115,6 +229,10 @@ static void run_console(struct options* o)
 static void print_usage(int fd, const char* prog)
 {
     dprintf(fd, "usage: %s [OPTION]...\n", prog);
+    dprintf(fd, "\n");
+    dprintf(fd, "modes:\n");
+    dprintf(fd, "  -s         random modal scales\n");
+    dprintf(fd, "  -p         random chord progressions\n");
     dprintf(fd, "\n");
     dprintf(fd, "options:\n");
     dprintf(fd, "  -g         output to X11 (using conky) (default)\n");
@@ -133,10 +251,11 @@ int main(int argc, char* argv[])
         .interval = 180,
         .font = NULL,
         .random_starting_finger = 0,
+        .mode = SCALE_MODE,
     };
 
     int res;
-    while((res = getopt(argc, argv, "hgci:f:F")) != -1) {
+    while((res = getopt(argc, argv, "hgci:f:Fsp")) != -1) {
         switch(res) {
         case 'g': graphical = 1; break;
         case 'c': graphical = 0; break;
@@ -147,6 +266,8 @@ int main(int argc, char* argv[])
                 exit(1);
             }
             break;
+        case 's': o.mode = SCALE_MODE; break;
+        case 'p': o.mode = PROGRESSION_MODE; break;
         case 'h':
         default:
             print_usage(res == 'h' ? 1 : 2, argv[0]);
