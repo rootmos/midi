@@ -59,20 +59,26 @@ static const char* note_name(semitone t, int sharp)
     }
 }
 
-static void run_graphical(unsigned int interval, const char* this,
-                          const char* font)
+struct options {
+    int interval;
+    int random_starting_finger;
+    const char* font;
+};
+
+static void run_graphical(const char* this, struct options* o)
 {
     char text[1024];
-    sprintf(text, "${exec %s -c}", this);
+    sprintf(text, "${exec %s -c %s}", this,
+            o->random_starting_finger ? "-F " : "");
 
     char ints[1024];
-    sprintf(ints, "--interval=%u", interval);
+    sprintf(ints, "--interval=%u", o->interval);
 
-    if(font) {
+    if(o->font) {
         execlp("conky", "conky", ints,
                "-x", "0", "-y", "0",
                "--text", text,
-               "--font", font,
+               "--font", o->font,
                "--alignment=bottom_right",
                NULL);
     } else {
@@ -84,13 +90,17 @@ static void run_graphical(unsigned int interval, const char* this,
     }
 }
 
-static void run_console(void)
+static void run_console(struct options* o)
 {
     semitone base = rand() % 12;
     int flavor = rand() % 2;
     size_t m = rand() % 7;
 
     printf("%s: ", modes[m].name);
+
+    if(o->random_starting_finger) {
+        printf("(%d) ", rand() % 5 + 1);
+    }
 
     for(size_t i = 0; i < 7; i++) {
         if(i == 6) {
@@ -110,6 +120,7 @@ static void print_usage(int fd, const char* prog)
     dprintf(fd, "  -g         output to X11 (using conky) (default)\n");
     dprintf(fd, "  -c         output to stdout\n");
     dprintf(fd, "  -f FONT    set the font\n");
+    dprintf(fd, "  -F         randomize starting finger\n");
     dprintf(fd, "  -h         print this message\n");
 }
 
@@ -118,17 +129,21 @@ int main(int argc, char* argv[])
     srand(time(NULL));
 
     int graphical = 1;
-    unsigned int interval = 180;
-    const char* font = NULL;
+    struct options o = {
+        .interval = 180,
+        .font = NULL,
+        .random_starting_finger = 0,
+    };
 
     int res;
-    while((res = getopt(argc, argv, "hgci:f:")) != -1) {
+    while((res = getopt(argc, argv, "hgci:f:F")) != -1) {
         switch(res) {
         case 'g': graphical = 1; break;
         case 'c': graphical = 0; break;
-        case 'f': font = strdup(optarg); break;
+        case 'f': o.font = strdup(optarg); break;
+        case 'F': o.random_starting_finger = 1; break;
         case 'i':
-            if(sscanf(optarg, "%u", &interval) != 1) {
+            if(sscanf(optarg, "%u", &o.interval) != 1) {
                 exit(1);
             }
             break;
@@ -140,9 +155,9 @@ int main(int argc, char* argv[])
     }
 
     if(graphical) {
-        run_graphical(120, argv[0], font);
+        run_graphical(argv[0], &o);
     } else {
-        run_console();
+        run_console(&o);
     }
 
     return 0;
