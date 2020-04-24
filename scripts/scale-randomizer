@@ -158,6 +158,7 @@ static void run_graphical(const char* this, struct options* o)
 
     if(o->font) {
         execlp("conky", "conky", ints,
+               "--quiet",
                "-x", "0", "-y", "0",
                "--text", text,
                "--font", o->font,
@@ -165,6 +166,7 @@ static void run_graphical(const char* this, struct options* o)
                NULL);
     } else {
         execlp("conky", "conky", ints,
+               "--quiet",
                "-x", "0", "-y", "0",
                "--text", text,
                "--alignment=bottom_right",
@@ -175,10 +177,17 @@ static void run_graphical(const char* this, struct options* o)
 static void run_console(struct options* o)
 {
     semitone base = rand() % 12;
-    int flavor = rand() % 2;
     if(o->mode == SCALE_MODE) {
-        struct mode* m = &modes[rand() % LENGTH(modes)];
-        printf("%s: ", m->name);
+        size_t i = rand() % LENGTH(modes);
+        struct mode* m = &modes[i];
+
+        semitone key = base + m->offset[(LENGTH(m->offset) - i) % LENGTH(m->offset)];
+        size_t f = 0;
+        for(int t = key; t != 0; t = (t + 5) % 12, f++) ;
+        int flavor = f < 5;
+        if(f >= 5 && f <= 7) flavor = rand() % 2;
+
+        printf("%s (%s): ", m->name, note_name(key, flavor));
 
         if(o->random_starting_finger) {
             printf("(%d) ", rand() % 5 + 1);
@@ -193,6 +202,7 @@ static void run_console(struct options* o)
             }
         }
     } else if(o->mode == PROGRESSION_MODE) {
+        int flavor = rand() % 2;
         struct progression* p = &progressions[rand() % LENGTH(progressions)];
 
         if(p->name) {
