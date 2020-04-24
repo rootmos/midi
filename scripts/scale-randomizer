@@ -137,20 +137,21 @@ struct options {
     enum {
         SCALE_MODE = 0,
         PROGRESSION_MODE,
+        MAX_MODE,
     } mode;
 };
 
 static void run_graphical(const char* this, struct options* o)
 {
     char text[1024];
-    const char* m;
+    const char* m = "";
     switch(o->mode) {
     case SCALE_MODE: m = "-s"; break;
     case PROGRESSION_MODE: m = "-p"; break;
     }
-    sprintf(text, "${exec %s -c -i %d %s%s}", this,
+    sprintf(text, "${exec %s -c -i %d %s %s}", this,
             o->interval,
-            o->random_starting_finger ? "-F " : "",
+            o->random_starting_finger ? "-F" : "",
             m);
 
     char ints[1024];
@@ -176,8 +177,10 @@ static void run_graphical(const char* this, struct options* o)
 
 static void run_console(struct options* o)
 {
+    int mode = o->mode == MAX_MODE ? rand() % MAX_MODE : o->mode;
+
     semitone base = rand() % 12;
-    if(o->mode == SCALE_MODE) {
+    if(mode == SCALE_MODE) {
         size_t i = rand() % LENGTH(modes);
         struct mode* m = &modes[i];
 
@@ -201,7 +204,7 @@ static void run_console(struct options* o)
                 printf("%s ", n);
             }
         }
-    } else if(o->mode == PROGRESSION_MODE) {
+    } else if(mode == PROGRESSION_MODE) {
         int flavor = rand() % 2;
         struct progression* p = &progressions[rand() % LENGTH(progressions)];
 
@@ -261,7 +264,7 @@ int main(int argc, char* argv[])
         .interval = 180,
         .font = NULL,
         .random_starting_finger = 0,
-        .mode = SCALE_MODE,
+        .mode = MAX_MODE,
     };
 
     int res;
