@@ -12,17 +12,19 @@ typedef unsigned int semitone;
 struct mode {
     const char* name;
     semitone offset[7];
+    size_t length;
 };
 
 // https://en.wikipedia.org/wiki/Musical_mode#Analysis
 struct mode modes[] = {
-    { .name = "Ionian (I)", .offset = { 0, 2, 4, 5, 7, 9, 11 } },
-    { .name = "Dorian (ii)", .offset = { 0, 2, 3, 5, 7, 9, 10 } },
-    { .name = "Phrygian (iii)", .offset = { 0, 1, 3, 5, 7, 8, 10 } },
-    { .name = "Lydian (IV)", .offset = { 0, 2, 4, 6, 7, 9, 11 } },
-    { .name = "Mixolydian (V)", .offset = { 0, 2, 4, 5, 7, 9, 10 } },
-    { .name = "Aeolian (vi)", .offset = { 0, 2, 3, 5, 7, 8, 10 } },
-    { .name = "Locrian (vii)", .offset = { 0, 1, 3, 5, 6, 8, 10 } },
+    { .name = "Ionian (I)", .offset = { 0, 2, 4, 5, 7, 9, 11 }, .length = 7 },
+    { .name = "Dorian (ii)", .offset = { 0, 2, 3, 5, 7, 9, 10 }, .length = 7 },
+    { .name = "Phrygian (iii)", .offset = { 0, 1, 3, 5, 7, 8, 10 }, .length = 7 },
+    { .name = "Lydian (IV)", .offset = { 0, 2, 4, 6, 7, 9, 11 }, .length = 7 },
+    { .name = "Mixolydian (V)", .offset = { 0, 2, 4, 5, 7, 9, 10 }, .length = 7 },
+    { .name = "Aeolian (vi)", .offset = { 0, 2, 3, 5, 7, 8, 10 }, .length = 7 },
+    { .name = "Locrian (vii)", .offset = { 0, 1, 3, 5, 6, 8, 10 }, .length = 7 },
+    { .name = "Whole tone", .offset = { 0, 2, 4, 6, 8, 10 }, .length = 6 },
 };
 
 #define PROGRESSION_MAX 10
@@ -193,7 +195,7 @@ static void run_console(struct options* o)
         size_t i = rand() % LENGTH(modes);
         struct mode* m = &modes[i];
 
-        semitone key = base + m->offset[(LENGTH(m->offset) - i) % LENGTH(m->offset)];
+        semitone key = base + m->offset[(m->length - i) % m->length];
         int flavor = flavor_from_on_key(key);
 
         printf("%s (%s): ", m->name, note_name(key, flavor));
@@ -202,9 +204,9 @@ static void run_console(struct options* o)
             printf("(%d) ", rand() % 5 + 1);
         }
 
-        for(size_t i = 0; i < LENGTH(m->offset); i++) {
+        for(size_t i = 0; i < m->length; i++) {
             const char* n = note_name(base + m->offset[i], flavor);
-            if(i == 6) {
+            if(i + 1 == m->length) {
                 printf("%s", n);
             } else {
                 printf("%s ", n);
