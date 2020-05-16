@@ -27,7 +27,7 @@ struct ctx {
     int clock_fd;
 };
 
-inline int is_clock_running(struct ctx* ctx)
+int is_clock_running(struct ctx* ctx)
 {
     return ctx->clock_fd >= 0;
 }

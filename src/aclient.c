@@ -44,7 +44,7 @@ static int usb_dev_from_card_id(const char* card_id,
 
 unsigned int mode = -1;
 
-static void select_and_print_port(snd_seq_t* seq, int client_id)
+static void select_and_print_port(snd_seq_t* seq, int client_id, int index)
 {
     snd_seq_port_info_t* pi;
     snd_seq_port_info_alloca(&pi);
@@ -53,7 +53,14 @@ static void select_and_print_port(snd_seq_t* seq, int client_id)
     snd_seq_port_info_set_port(pi, -1);
     for(int port_id = 0; snd_seq_query_next_port(seq, pi) >= 0; port_id++) {
         if((snd_seq_port_info_get_capability(pi) & mode) == mode) {
-            printf("%d:%d\n", client_id, port_id);
+            if(index >= 0) {
+                if(port_id == index) {
+                    printf("%d:%d\n", client_id, port_id);
+                    break;
+                }
+            } else {
+                printf("%d:%d\n", client_id, port_id);
+            }
         }
     }
 }
@@ -82,7 +89,8 @@ static void usb_port_from_device(int usb_bus, int usb_dev, int* usb_port)
     exit(1);
 }
 
-static void client_id_from_usb_port(snd_seq_t* seq, int usb_bus, int usb_port)
+static void client_id_from_usb_port(snd_seq_t* seq,
+                                    int usb_bus, int usb_port, int index)
 {
     snd_seq_client_info_t* ci;
     snd_seq_client_info_alloca(&ci);
@@ -115,7 +123,7 @@ static void client_id_from_usb_port(snd_seq_t* seq, int usb_bus, int usb_port)
                 usb_port_from_device(usb_bus, d, &p);
 
                 if(usb_port == p) {
-                    select_and_print_port(seq, client_id);
+                    select_and_print_port(seq, client_id, index);
                 }
             }
         } else {
@@ -130,8 +138,9 @@ static void client_id_from_usb_port(snd_seq_t* seq, int usb_bus, int usb_port)
 int main(int argc, char* argv[])
 {
     int usb_bus = -1, usb_port = -1;
+    int index = -1;
     int res;
-    while((res = getopt(argc, argv, "iou:")) != -1) {
+    while((res = getopt(argc, argv, "iou:I:")) != -1) {
         switch(res) {
         case 'i':
             if(mode == -1) {
@@ -154,6 +163,13 @@ int main(int argc, char* argv[])
                 exit(1);
             }
             break;
+        case 'I':
+            res = sscanf(optarg, "%d", &index);
+            if(res != 1 || index < 0) {
+                dprintf(2, "unable to parse as non-negative index: %s", optarg);
+                exit(1);
+            }
+            break;
         default:
             dprintf(2, "unsupported option");
             exit(1);
@@ -165,7 +181,7 @@ int main(int argc, char* argv[])
     check_alsa_result(res);
 
     if(usb_bus > 0 && usb_port > 0) {
-        client_id_from_usb_port(seq, usb_bus, usb_port);
+        client_id_from_usb_port(seq, usb_bus, usb_port, index);
     } else {
         dprintf(2, "specify what to you want to find\n");
         exit(1);
