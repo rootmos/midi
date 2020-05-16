@@ -152,6 +152,7 @@ void stop_clock(struct ctx* ctx)
     }
 
     snd_seq_event_t f;
+    snd_seq_ev_clear(&f);
     snd_seq_ev_set_queue_stop(&f, 0);
     send_event(ctx, &f);
 }
@@ -165,6 +166,7 @@ void start_clock(struct ctx* ctx, float bpm)
         CHECK(ctx->clock_fd, "timerfd_create");
 
         snd_seq_event_t f;
+        snd_seq_ev_clear(&f);
         snd_seq_ev_set_queue_start(&f, 0);
         send_event(ctx, &f);
     } else {
@@ -188,7 +190,7 @@ void handle_clock_timerfd(struct ctx* ctx)
     int r = read(ctx->clock_fd, &t, sizeof(t)); CHECK(r, "read");
 
     for(size_t i = 0; i < t; i++) {
-        snd_seq_event_t f = { 0 };
+        snd_seq_event_t f;
         snd_seq_ev_clear(&f);
         f.type = SND_SEQ_EVENT_CLOCK;
         send_event(ctx, &f);

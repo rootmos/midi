@@ -9,6 +9,7 @@ struct state {
     unsigned char tempo_dec_note;
 
     int active;
+    unsigned char channel;
 
     int tempo_mode;
     float tempo;
@@ -26,7 +27,7 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
     switch(ev->type) {
     case SND_SEQ_EVENT_NOTEON:
         debug("note on: %hhu", ev->data.note.note);
-        if(st->tempo_mode) {
+        if(st->tempo_mode && ev->data.note.channel == st->channel) {
             st->tempo = (((float)300 - 30)/(MAX_NOTE - MIN_NOTE)) * (ev->data.note.note - MIN_NOTE) + 30;
             st->tempo_mode = 0;
             info("tempo: %f BPM", st->tempo);
@@ -35,8 +36,9 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
         }
         if(ev->data.note.note == st->menu_note) {
             st->active = 1;
-            debug("menu activated");
-        } else if(st->active) {
+            st->channel = ev->data.note.channel;
+            debug("menu activated from channel %hhu", st->channel);
+        } else if(st->active && ev->data.note.channel == st->channel) {
             if (ev->data.note.note == st->start_note) {
                 info("start clock");
                 start_clock(ctx, st->tempo);
@@ -88,6 +90,7 @@ int main(int argc, char* argv[])
 
     struct state st = {
         .active = 0,
+        .channel = -1,
         .tempo_mode = 0,
         .tempo = 120,
         .tempo_step = 1,
