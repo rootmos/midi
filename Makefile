@@ -1,8 +1,6 @@
 ROOT = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 export BUILD ?= $(ROOT)/build
 
-CFLAGS += -I$(BUILD)/usr/include -L$(BUILD)/usr/lib
-
 all: libr
 	@mkdir -p "$(BUILD)"
 	$(MAKE) -C src
@@ -35,5 +33,6 @@ deploy: midi.tar.gz
 
 clean:
 	rm -rf $(BUILD)
+	$(MAKE) -C libr clean
 
 .PHONY: all clean libr deploy img
