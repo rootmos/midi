@@ -1,8 +1,15 @@
-all: $(foreach exe, forward microGranny aclient, $(BUILD)/bin/$(exe))
+EXTRA_CFLAGS ?= -Wall -Werror -O2
+CFLAGS += $(EXTRA_CFLAGS)
+CFLAGS += -I$(BUILD)/usr/include
+
+LDFLAGS ?= -static
+LDFLAGS += -L$(BUILD)/usr/lib
+
+all: $(foreach exe, forward microGranny aclient menu, $(BUILD)/bin/$(exe))
 
 $(BUILD)/bin/%: %.c midi.c
 	@mkdir -p "$(dir $@)"
-	$(CC) -o $@ $(CFLAGS) -Wall -Werror -O2 -static $< -lasound -lr
+	$(CC) -o $@ $(CFLAGS) $< $(LDFLAGS) -lasound -lr
 
 $(BUILD)/bin/aclient: aclient.c
-	$(CC) -o $@ $(CFLAGS) -O2 -static $< -lusb-1.0 -lasound
+	$(CC) -o $@ $(CFLAGS) $< $(LDFLAGS) -lusb-1.0 -lasound
