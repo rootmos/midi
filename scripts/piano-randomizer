@@ -25,6 +25,8 @@ struct mode modes[] = {
     { .name = "Aeolian (vi)", .offset = { 0, 2, 3, 5, 7, 8, 10 }, .length = 7 },
     { .name = "Locrian (vii)", .offset = { 0, 1, 3, 5, 6, 8, 10 }, .length = 7 },
     { .name = "Whole tone", .offset = { 0, 2, 4, 6, 8, 10 }, .length = 6 },
+    { .name = "Blues (m)", .offset = { 0, 3, 5, 6, 7, 10 }, .length = 6 },
+    { .name = "Blues (M)", .offset = { 0, 2, 3, 4, 7, 9 }, .length = 6 },
 };
 
 #define PROGRESSION_MAX 10
