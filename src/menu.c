@@ -66,6 +66,7 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
             debug("menu deactivated");
         }
         break;
+    case SND_SEQ_EVENT_KEYPRESS:
     case SND_SEQ_EVENT_CONTROLLER:
     case SND_SEQ_EVENT_START:
     case SND_SEQ_EVENT_STOP:

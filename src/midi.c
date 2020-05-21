@@ -21,7 +21,7 @@ struct ctx {
     uint64_t pulse_ns[256];
     size_t pulses;
 
-    snd_seq_event_t queue[8];
+    snd_seq_event_t queue[32];
     size_t queue_n, queue_m;
 
     int clock_fd;
