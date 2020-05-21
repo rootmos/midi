@@ -24,6 +24,13 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
             send_event(ctx, ev);
         }
         break;
+    case SND_SEQ_EVENT_KEYPRESS:
+        if((1 << ev->data.note.channel) & st->in_channels) {
+            debug("keypress %u", ev->data.note.note);
+            SET_CHANNEL(ev->data.note, st->out_channel);
+            send_event(ctx, ev);
+        }
+        break;
     case SND_SEQ_EVENT_CONTROLLER:
         if((1 << ev->data.control.channel) & st->in_channels) {
             info("cc %u %u", ev->data.control.param, ev->data.control.value);
