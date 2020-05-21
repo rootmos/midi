@@ -6,12 +6,13 @@ UUID=6137-6233
 SUDO=
 ACTION=list
 PLAYER=${PLAYER-mpv}
-while getopts "pluS-U:" OPT; do
+while getopts "pluS-U:h" OPT; do
     case $OPT in
         S) SUDO=sudo ;;
         l) ACTION=list ;;
         p) ACTION=play ;;
         u) ACTION=upload ;;
+        h) ACTION=usage ;;
         U) UUID=$OPTARG ;;
         -) break ;;
         ?) exit 2 ;;
