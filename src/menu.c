@@ -37,7 +37,7 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
         if(ev->data.note.note == st->menu_note) {
             st->active = 1;
             st->channel = ev->data.note.channel;
-            debug("menu activated from channel %hhu", st->channel);
+            info("menu activated from channel %hhu", st->channel);
         } else if(st->active && ev->data.note.channel == st->channel) {
             if (ev->data.note.note == st->start_note) {
                 info("start clock");
@@ -61,7 +61,8 @@ int go(struct ctx* ctx, snd_seq_event_t* ev, void* opaque)
         break;
     case SND_SEQ_EVENT_NOTEOFF:
         debug("note off: %hhu", ev->data.note.note);
-        if(ev->data.note.note == st->menu_note) {
+        if(ev->data.note.note == st->menu_note
+           && ev->data.note.channel == st->channel) {
             st->active = 0;
             debug("menu deactivated");
         }
