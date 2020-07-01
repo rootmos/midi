@@ -124,11 +124,15 @@ static void change_offset(struct ctx* ctx, struct state* st,
             snd_seq_ev_set_noteoff(&ev, st->note_channel, base + prev, v);
             send_event(ctx, &ev);
 
-            snd_seq_ev_set_noteon(&ev, st->note_channel, base + value, v);
-            send_event(ctx, &ev);
-
-            info("resetting offset of live note: base=%u offset=%u->%u",
-                 base, prev, value);
+            if(value >= 0) {
+                snd_seq_ev_set_noteon(&ev, st->note_channel, base + value, v);
+                send_event(ctx, &ev);
+                info("resetting offset of live note: base=%u offset=%u->%u",
+                     base, prev, value);
+            } else {
+                info("turning off offset of live note: base=%u offset=%u",
+                     base, prev);
+            }
         }
     }
 }
