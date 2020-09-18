@@ -200,6 +200,9 @@ void handle_clock_timerfd(struct ctx* ctx)
 #define CHANNEL(ev) ((ev).channel + 1)
 #define SET_CHANNEL(ev, c) do { (ev).channel = (c) - 1; } while(0)
 
+#define NOTE(ev) ((ev).note)
+#define SET_NOTE(ev, c) do { (ev).note = (c); } while(0)
+
 int loop(struct ctx* ctx, event_callback_t cb, void* opaque)
 {
     while(1) {

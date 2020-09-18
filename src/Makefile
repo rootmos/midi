@@ -1,5 +1,8 @@
+LOG_LEVEL ?= INFO
+
 EXTRA_CFLAGS ?= -Wall -Werror -O2
 CFLAGS += $(EXTRA_CFLAGS)
+CFLAGS += -DLOG_LEVEL=LOG_$(LOG_LEVEL)
 CFLAGS += -I$(BUILD)/usr/include
 
 LDFLAGS ?= -static

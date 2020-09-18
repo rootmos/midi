@@ -2,7 +2,7 @@
 
 PATH=/usr/local/bin:$PATH
 
-(nice -10 microGranny 10 5 5 2>&1 | logger -st microGranny) &
+(nice -10 microGranny 10 11 5 5 2>&1 | logger -st microGranny) &
 (nice -10 spazer blofeld 7 14 2>&1 | logger -st blofeld) &
 (nice -10 forward acid8 3 2>&1 | logger -st acid8) &
 (nice -10 menu menu 2>&1 | logger -st menu) &
